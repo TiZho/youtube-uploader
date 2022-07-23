@@ -180,11 +180,17 @@ async function uploadVideo(videoJSON: Video) {
         await sleep(5000)
     }
     if (videoJSON.onProgress) {
-        clearInterval(progressChecker)
-        progressChecker = undefined
-        progress = { progress: 100, stage: ProgressEnum.Done }
-        videoJSON.onProgress(progress)
+        await page.click('#close-button.style-scope.ytcp-uploads-dialog')  // TODO Here quit page
+        //clearInterval(progressChecker)
+        //progressChecker = undefined
+        //progress = { progress: 100, stage: ProgressEnum.Done }
+        //videoJSON.onProgress(progress)
     }
+
+    await sleep(5000) // TODO list all videos and find the row which content the
+    const videoLinkText = `"//*[contains(text())='${title}']`
+    const videoLink = await page.$x(videoLinkText)
+    await page.evaluate((el) => el.click(), videoLink[0])
 
     // Wait until title & description box pops up
     if (thumb) {
@@ -198,7 +204,9 @@ async function uploadVideo(videoJSON: Video) {
         await thumbChooser.accept([thumb])
     }
 
-    await page.waitForFunction('document.querySelectorAll(\'[id="textbox"]\').length > 1')
+    // TODO Here find an another way to close the popup
+
+    await page.waitForFunction('document.querySelectorAll(\'[id="textbox"]\').length > 1') // TODO Here we need to leave file upload popup
     const textBoxes = await page.$x('//*[@id="textbox"]')
     await page.bringToFront()
     // Add the title value
@@ -272,7 +280,7 @@ async function uploadVideo(videoJSON: Video) {
         await page.evaluate((el) => el.click(), langName[langName.length - 1])
     }
     // click next button
-    const nextBtnXPath = "//*[normalize-space(text())='Next']/parent::*[not(@disabled)]"
+    const nextBtnXPath = "//*[normalize-space(text())='Next']/parent::*[not(@disabled)]"   // TODO Next button page here
     await page.waitForXPath(nextBtnXPath)
     let next = await page.$x(nextBtnXPath)
     await next[0].click()
@@ -294,7 +302,7 @@ async function uploadVideo(videoJSON: Video) {
     // Get publish button
     const publishXPath =
         "//*[normalize-space(text())='Publish']/parent::*[not(@disabled)] | //*[normalize-space(text())='Save']/parent::*[not(@disabled)]"
-    await page.waitForXPath(publishXPath)
+    await page.waitForXPath(publishXPath) // TODO Here publish window path here
     // save youtube upload link
     await page.waitForSelector('[href^="https://youtu.be"]')
     const uploadedLinkHandle = await page.$('[href^="https://youtu.be"]')
@@ -306,6 +314,157 @@ async function uploadVideo(videoJSON: Video) {
     } while (uploadedLink === 'https://youtu.be/')
 
     const closeDialogXPath = uploadAsDraft ? saveCloseBtnXPath : publishXPath    
+    let closeDialog
+    for (let i = 0; i < 10; i++) {
+        try {
+            closeDialog = await page.$x(closeDialogXPath)
+            await closeDialog[0].click()
+            break
+        } catch (error) {
+            await page.waitForTimeout(5000)
+        }
+    }
+    // await page.waitForXPath('//*[contains(text(),"Finished processing")]', { timeout: 0})
+
+    // no closeBtn will show up if keeps video as draft
+    if (uploadAsDraft) return uploadedLink
+
+    // Wait for closebtn to show up
+    try {
+        await page.waitForXPath(closeBtnXPath)
+    } catch (e) {
+        await browser.close()
+        throw new Error(
+            'Please make sure you set up your default video visibility correctly, you might have forgotten. More infos : https://github.com/fawazahmed0/youtube-uploader#youtube-setup'
+        )
+    }
+
+    return uploadedLink
+}
+
+
+async function updateVideoMetadata(videoJSON: Video){
+
+    const closeBtnXPath = "//*[normalize-space(text())='Close']"
+    const saveCloseBtnXPath = '//*[@aria-label="Save and close"]/tp-yt-iron-icon'
+
+    const title = videoJSON.title
+    const description = videoJSON.description
+    const tags = videoJSON.tags
+    // For backward compatablility playlist.name is checked first
+    const playlistName = videoJSON.playlist
+    const videoLang = videoJSON.language
+    const thumb = videoJSON.thumbnail
+    const uploadAsDraft = videoJSON.uploadAsDraft
+
+    await page.waitForFunction('document.querySelectorAll(\'[id="textbox"]\').length > 1') // TODO Here we need to leave file upload popup
+    const textBoxes = await page.$x('//*[@id="textbox"]')
+    await page.bringToFront()
+    // Add the title value
+    await textBoxes[0].focus()
+    await page.waitForTimeout(1000)
+    await textBoxes[0].type(title.substring(0, maxTitleLen))
+    // Add the Description content
+    await textBoxes[1].type(description.substring(0, maxDescLen))
+
+    const childOption = await page.$x('//*[contains(text(),"No, it\'s")]')
+    await childOption[0].click()
+
+    const moreOption = await page.$x("//*[normalize-space(text())='Show more']")
+    await moreOption[0].click()
+    const playlist = await page.$x("//*[normalize-space(text())='Select']")
+    let createplaylistdone
+    if (playlistName) {
+        // Selecting playlist
+        for (let i = 0; i < 2; i++) {
+            try {
+                await page.evaluate((el) => el.click(), playlist[0])
+                // Type the playlist name to filter out
+                await page.waitForSelector('#search-input')
+                await page.focus(`#search-input`)
+                await page.type(`#search-input`, playlistName)
+
+                const escapedPlaylistName = escapeQuotesForXPath(playlistName);
+                const playlistToSelectXPath = "//*[normalize-space(text())=" + escapedPlaylistName + "]";
+                await page.waitForXPath(playlistToSelectXPath, { timeout: 10000 })
+                const playlistNameSelector = await page.$x(playlistToSelectXPath)
+                await page.evaluate((el) => el.click(), playlistNameSelector[0])
+                createplaylistdone = await page.$x("//*[normalize-space(text())='Done']")
+                await page.evaluate((el) => el.click(), createplaylistdone[0])
+                break
+            } catch (error) {
+                // Creating new playlist
+                // click on playlist dropdown
+                await page.evaluate((el) => el.click(), playlist[0])
+                // click New playlist button
+                const newPlaylistXPath =
+                    "//*[normalize-space(text())='New playlist'] | //*[normalize-space(text())='Create playlist']"
+                await page.waitForXPath(newPlaylistXPath)
+                const createplaylist = await page.$x(newPlaylistXPath)
+                await page.evaluate((el) => el.click(), createplaylist[0])
+                // Enter new playlist name
+                await page.keyboard.type(' ' + playlistName.substring(0, 148))
+                // click create & then done button
+                const createplaylistbtn = await page.$x("//*[normalize-space(text())='Create']")
+                await page.evaluate((el) => el.click(), createplaylistbtn[1])
+                createplaylistdone = await page.$x("//*[normalize-space(text())='Done']")
+                await page.evaluate((el) => el.click(), createplaylistdone[0])
+            }
+        }
+    }
+    // Add tags
+    if (tags) {
+        await page.focus(`[aria-label="Tags"]`)
+        await page.type(`[aria-label="Tags"]`, tags.join(', ').substring(0, 495) + ', ')
+    }
+
+    // Selecting video language
+    if (videoLang) {
+        const langHandler = await page.$x("//*[normalize-space(text())='Video language']")
+        await page.evaluate((el) => el.click(), langHandler[0])
+        // translate(text(),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')
+        const langName = await page.$x(
+            '//*[normalize-space(translate(text(),"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz"))=\'' +
+            videoLang.toLowerCase() +
+            "']"
+        )
+        await page.evaluate((el) => el.click(), langName[langName.length - 1])
+    }
+    // click next button
+    const nextBtnXPath = "//*[normalize-space(text())='Next']/parent::*[not(@disabled)]"   // TODO Next button page here
+    await page.waitForXPath(nextBtnXPath)
+    let next = await page.$x(nextBtnXPath)
+    await next[0].click()
+    // await sleep(2000)
+    await page.waitForXPath(nextBtnXPath)
+    // click next button
+    next = await page.$x(nextBtnXPath)
+    await next[0].click()
+
+    await page.waitForXPath(nextBtnXPath)
+    // click next button
+    next = await page.$x(nextBtnXPath)
+    await next[0].click()
+    //  const publicXPath = `//*[normalize-space(text())='Public']`
+    //  await page.waitForXPath(publicXPath)
+    //  const publicOption = await page.$x(publicXPath)
+    //  await publicOption[0].click()
+
+    // Get publish button
+    const publishXPath =
+        "//*[normalize-space(text())='Publish']/parent::*[not(@disabled)] | //*[normalize-space(text())='Save']/parent::*[not(@disabled)]"
+    await page.waitForXPath(publishXPath) // TODO Here publish window path here
+    // save youtube upload link
+    await page.waitForSelector('[href^="https://youtu.be"]')
+    const uploadedLinkHandle = await page.$('[href^="https://youtu.be"]')
+
+    let uploadedLink
+    do {
+        await page.waitForTimeout(500)
+        uploadedLink = await page.evaluate((e) => e.getAttribute('href'), uploadedLinkHandle)
+    } while (uploadedLink === 'https://youtu.be/')
+
+    const closeDialogXPath = uploadAsDraft ? saveCloseBtnXPath : publishXPath
     let closeDialog
     for (let i = 0; i < 10; i++) {
         try {
