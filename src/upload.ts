@@ -148,6 +148,7 @@ async function uploadVideo(videoJSON: Video) {
     let progressChecker: any
     let progress: VideoProgress = { progress: 0, stage: ProgressEnum.Uploading };
     if (videoJSON.onProgress) {
+        console.log("Setting on progress")
         videoJSON.onProgress(progress)
         progressChecker = setInterval(async () => {
             let curProgress = await page.evaluate(() => {
@@ -163,15 +164,18 @@ async function uploadVideo(videoJSON: Video) {
             if ( progress.progress == newProgress ) return
             progress.progress = newProgress
             videoJSON.onProgress!(progress)
+            console.log("on progress done")
         }, 500)
     }
     // Check if daily upload limit is reached
+    console.log("waiting for limit reached")
     await page.waitForXPath('//*[contains(text(),"Daily upload limit reached")]', { timeout: 15000 }).then(() => {
         console.log("Daily upload limit reached.");
         browser.close();
     }).catch(() => {});
     
     // Wait for upload to complete
+    console.log("waiting for Upload complete")
     await page.waitForXPath('//*[contains(text(),"Upload complete")]', { timeout: 0 })
     if (videoJSON.onProgress) {
         progress = { progress: 0, stage: ProgressEnum.Processing }
@@ -180,11 +184,14 @@ async function uploadVideo(videoJSON: Video) {
 
     // Wait for upload to go away and processing to start, skip the wait if the user doesn't want it.
     if (!videoJSON.skipProcessingWait) {
+        console.log("waiting for skipProcessingWait")
         await page.waitForXPath('//*[contains(text(),"Upload complete")]', { hidden: true, timeout: 0 })
     } else {
+        console.log("not waiting for skipProcessingWait")
         await sleep(5000)
     }
     if (videoJSON.onProgress) {
+        console.log("closing window")
         await page.click('#close-button.style-scope.ytcp-uploads-dialog')  // TODO Here quit page
         //clearInterval(progressChecker)
         //progressChecker = undefined
