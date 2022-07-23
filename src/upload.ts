@@ -81,11 +81,16 @@ async function uploadVideo(videoJSON: Video) {
         if (videoJSON.title.includes(invalidCharacters[i]))
             throw new Error(`"${videoJSON.title}" includes a character not allowed in youtube titles (${invalidCharacters[i]})`)
 
+    for (let i in invalidCharacters)
+        if (videoJSON.filename?.includes(invalidCharacters[i]))
+            throw new Error(`"${videoJSON.filename}" includes a character not allowed in youtube titles (${invalidCharacters[i]})`)
+
     if (videoJSON.channelName) {
       await changeChannel(videoJSON.channelName);
     }
 
     const title = videoJSON.title
+    const filename = videoJSON.filename?.split(".")[0]
     const description = videoJSON.description
     const tags = videoJSON.tags
     // For backward compatablility playlist.name is checked first
@@ -188,7 +193,7 @@ async function uploadVideo(videoJSON: Video) {
     }
 
     await sleep(5000) // TODO list all videos and find the row which content the
-    const videoLinkText = `"//*[contains(text())='${title}']`
+    const videoLinkText = `"//*[contains(text())='${filename}']`
     const videoLink = await page.$x(videoLinkText)
     await page.evaluate((el) => el.click(), videoLink[0])
 

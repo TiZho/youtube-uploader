@@ -2,6 +2,7 @@ export interface Video {
     path: string
     title: string
     description: string
+    filename?: string
     tags?: string[]
     language?: string
     playlist?: string
