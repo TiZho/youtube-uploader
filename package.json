@@ -16,7 +16,9 @@
     "prettier": "^2.4.1",
     "puppeteer": "^14.4.1",
     "puppeteer-extra": "^3.3.0",
-    "puppeteer-extra-plugin-stealth": "git://github.com/TiZho/puppeteer-extra-plugins-stealth.git#master"
+    "puppeteer-extra-plugin-stealth": "git://github.com/TiZho/puppeteer-extra-plugins-stealth.git#master",
+    "puppeteer-extra-plugin": "git://github.com/TiZho/puppeteer-extra-plugins.git#master",
+    "merge-deep": "git://github.com/TiZho/merge-deep.git#master"
   },
   "repository": {
     "type": "git",
