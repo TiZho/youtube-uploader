@@ -39,10 +39,11 @@ const homePageURL = 'https://www.youtube.com'
  */
 export const upload = async (
     credentials: Credentials,
+    baseCookiesDirPath: string,
     videos: Video[],
     puppeteerLaunch?: PuppeteerNodeLaunchOptions
 ) => {
-    cookiesDirPath = path.join('.', 'yt-auth')
+    cookiesDirPath = path.join(baseCookiesDirPath, 'yt-auth')
     cookiesFilePath = path.join(
         cookiesDirPath,
         `cookies-${credentials.email.split('@')[0].replace(/\./g, '_')}-${credentials.email
@@ -336,10 +337,11 @@ async function uploadVideo(videoJSON: Video) {
 
 export const update = async (
     credentials: Credentials,
+    baseCookiesDirPath: string,
     videos: VideoToEdit[],
     puppeteerLaunch?: PuppeteerNodeLaunchOptions
 ) => {
-    cookiesDirPath = path.join('.', 'yt-auth')
+    cookiesDirPath = path.join(baseCookiesDirPath, 'yt-auth')
     cookiesFilePath = path.join(
         cookiesDirPath,
         `cookies-${credentials.email.split('@')[0].replace(/\./g, '_')}-${credentials.email
@@ -368,10 +370,11 @@ export const update = async (
 
 export const comment = async (
     credentials: Credentials,
+    baseCookiesDirPath: string,
     comments: Comment[],
     puppeteerLaunch?: PuppeteerNodeLaunchOptions
 ) => {
-    cookiesDirPath = path.join('.', 'yt-auth')
+    cookiesDirPath = path.join(baseCookiesDirPath, 'yt-auth')
     cookiesFilePath = path.join(
         cookiesDirPath,
         `cookies-${credentials.email.split('@')[0].replace(/\./g, '_')}-${credentials.email
