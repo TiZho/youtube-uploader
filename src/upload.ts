@@ -287,10 +287,10 @@ async function uploadVideo(videoJSON: Video) {
     // click next button
     next = await page.$x(nextBtnXPath)
     await next[0].click()
-    const publicXPath = `//*[@name='PUBLIC' and @role='radio']`
-    await page.waitForXPath(publicXPath)
-    const publicOption = await page.$x(publicXPath)
-    await publicOption[0].click()
+    //const publicXPath = `//*[@name='PUBLIC' and @role='radio']`
+    //await page.waitForXPath(publicXPath)
+    //const publicOption = await page.$x(publicXPath)
+    //await publicOption[0].click()
 
     // Get publish button
     const publishXPath =
