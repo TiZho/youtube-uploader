@@ -168,7 +168,7 @@ async function uploadVideo(videoJSON: Video) {
     }).catch(() => {});
     
     // Wait for upload to complete
-    await page.waitForXPath('//*[contains(text(),"Checks complete. No issues found.")]', { timeout: 0 })
+    await page.waitForXPath('//*[contains(text(),"Checks complete. No issues found.")]|//*[contains(text(),"Processing HD")]', { timeout: 0 })
     if (videoJSON.onProgress) {
         progress = { progress: 0, stage: ProgressEnum.Processing }
         videoJSON.onProgress(progress)
@@ -176,7 +176,7 @@ async function uploadVideo(videoJSON: Video) {
 
     // Wait for upload to go away and processing to start, skip the wait if the user doesn't want it.
     if (!videoJSON.skipProcessingWait) {
-        await page.waitForXPath('//*[contains(text(),"Checks complete. No issues found.")]', { hidden: true, timeout: 0 })
+        await page.waitForXPath('//*[contains(text(),"Checks complete. No issues found.")]|//*[contains(text(),"Processing HD")]', { hidden: true, timeout: 0 })
     } else {
         await sleep(5000)
     }
@@ -287,10 +287,10 @@ async function uploadVideo(videoJSON: Video) {
     // click next button
     next = await page.$x(nextBtnXPath)
     await next[0].click()
-    //  const publicXPath = `//*[normalize-space(text())='Public']`
-    //  await page.waitForXPath(publicXPath)
-    //  const publicOption = await page.$x(publicXPath)
-    //  await publicOption[0].click()
+    const publicXPath = `//*[@name='PUBLIC' and @role='radio']`
+    await page.waitForXPath(publicXPath)
+    const publicOption = await page.$x(publicXPath)
+    await publicOption[0].click()
 
     // Get publish button
     const publishXPath =
