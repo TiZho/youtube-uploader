@@ -383,6 +383,7 @@ export const comment = async (
     )
 
     await launchBrowser(puppeteerLaunch)
+    await page.waitForTimeout(4000)
     if (!fs.existsSync(cookiesFilePath)) await loadAccount(credentials)
     const commentsS = []
 
