@@ -188,16 +188,16 @@ async function uploadVideo(videoJSON: Video) {
     }
 
     // Wait until title & description box pops up
-    if (thumb) {
-        const [thumbChooser] = await Promise.all([
-            page.waitForFileChooser(),
-            await page.waitForSelector(
-                `[class="remove-default-style style-scope ytcp-thumbnails-compact-editor-uploader"]`
-            ),
-            await page.click(`[class="remove-default-style style-scope ytcp-thumbnails-compact-editor-uploader"]`)
-        ])
-        await thumbChooser.accept([thumb])
-    }
+    //if (thumb) {
+    //    const [thumbChooser] = await Promise.all([
+    //        page.waitForFileChooser(),
+    //        await page.waitForSelector(
+    //            `[class="remove-default-style style-scope ytcp-thumbnails-compact-editor-uploader"]`
+    //        ),
+    //        await page.click(`[class="remove-default-style style-scope ytcp-thumbnails-compact-editor-uploader"]`)
+    //    ])
+    //    await thumbChooser.accept([thumb])
+    //}
 
     await page.waitForFunction('document.querySelectorAll(\'[id="textbox"]\').length > 1')
     const textBoxes = await page.$x('//*[@id="textbox"]')
