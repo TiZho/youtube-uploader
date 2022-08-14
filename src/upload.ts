@@ -803,6 +803,11 @@ async function launchBrowser(puppeteerLaunch?: PuppeteerNodeLaunchOptions) {
     await page.setBypassCSP(true)
 }
 
+
+export const closeBrowser = async () => {
+    await browser.close();
+}
+
 async function login(localPage: Page, credentials: Credentials) {
     await localPage.goto(uploadURL)
 
